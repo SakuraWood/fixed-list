@@ -2,15 +2,40 @@
  * Created by Lee Sure on 2017/3/8.
  */
 
+var fixList;
+
 function start() {
     var data = [];
-    for (var i = 0; i < 373; i++) {
-        var div = '<div class="hehe" style="color: red; height: 60px;width: 45%;float: left">' + i + '</div>';
+    var random = Math.random() * 200 + 600;
+    console.log(random);
+    for (var i = 0; i < random; i++) {
+        var div = '<div class="hehe" id=' + i + ' style="color: red; height: 60px;width: 45%;float: left">' + i + '</div>';
         data.push(div);
     }
     var parentNode = document.getElementById('parent');
-    var fixList = new FixedList(parentNode, data);
+    fixList = new FixedList(parentNode, data);
     fixList.init(2, 90);
+    fixList.setEventListener(function () {
+        var prt = document.getElementById('parent');
+        prt.addEventListener('click', function (e) {
+            console.log(e.target.id);
+        });
+    });
 }
 
-start();
+function setIntervala() {
+    start();
+    setInterval(ref, 5000);
+}
+
+function ref() {
+    var data = [];
+    var random = Math.random() * 200 + 600;
+    console.log(random);
+    for (var i = 0; i < random; i++) {
+        var div = '<div class="hehe" id=' + i + ' style="color: red; height: 60px;width: 45%;float: left">' + i + '</div>';
+        data.push(div);
+    }
+    fixList.refreshData(data);
+}
+setIntervala();
