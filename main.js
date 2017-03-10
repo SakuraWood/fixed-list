@@ -6,15 +6,15 @@ var fixList;
 
 function start() {
     var data = [];
-    var random = Math.random() * 200 + 600;
+    var random = Math.random() * 50 + 100;
     console.log(random);
     for (var i = 0; i < random; i++) {
-        var div = '<div class="hehe" id=' + i + ' style="color: red; height: 60px;width: 45%;float: left">' + i + '</div>';
+        var div = '<div class="hehe" id=' + i + ' style="color: red; height: 250px;width: 45%;float: left">' + i + '</div>';
         data.push(div);
     }
     var parentNode = document.getElementById('parent');
     fixList = new FixedList(parentNode, data);
-    fixList.init(2, 90);
+    fixList.init(2, 20);
     fixList.setEventListener(function () {
         var prt = document.getElementById('parent');
         prt.addEventListener('click', function (e) {
@@ -30,10 +30,10 @@ function setIntervala() {
 
 function ref() {
     var data = [];
-    var random = Math.random() * 200 + 600;
+    var random = Math.random() * 50 + 100;
     console.log(random);
     for (var i = 0; i < random; i++) {
-        var div = '<div class="hehe" id=' + i + ' style="color: red; height: 60px;width: 45%;float: left">' + i + '</div>';
+        var div = '<div class="hehe" id=' + i + ' style="color: red; height: 250px;width: 45%;float: left">' + i + '</div>';
         data.push(div);
     }
     fixList.refreshData(data);

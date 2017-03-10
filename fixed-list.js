@@ -16,7 +16,7 @@ var FixedList = (function invocation() {
         data,           //数据源
         eventListener,  //事件监听
         page,           //页数
-        isDebug = true;
+        isDebug = false;
 
     /**
      * 构造函数
@@ -26,7 +26,7 @@ var FixedList = (function invocation() {
      */
     function FixedList(parentNode, dat) {
         prtNode = parentNode;
-        console.log(prtNode);
+        console.logger(prtNode);
         data = dat;
         childClassName = getChildClassName(data);
     }
@@ -45,11 +45,11 @@ var FixedList = (function invocation() {
      */
     FixedList.prototype.refreshData = function (dat) {
         data = dat;
-        console.log('当前页    ' + page);
         var divU = document.getElementById('divBlankU');
         var divD = document.getElementById('divBlankD');
         var uh = parseInt(divU.style.height);
         var dh = parseInt(divD.style.height);
+        console.logger(page);
         replaceHtml(uh, dh);
     };
 
@@ -75,11 +75,11 @@ var FixedList = (function invocation() {
                 array.push(data[i]);
             }
         }
-        // console.log(array.join(''));
+        // console.logger(array.join(''));
         prtNode.innerHTML = array.join('');
         var restData = data.slice(unit, length);            //剩余的内容
         divBlankDH = Math.ceil(restData.length / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
-        console.log(divBlankDH);
+        console.logger(divBlankDH);
         document.getElementById('divBlankD').style.height = divBlankDH + 'px';
         scroll();
         return this;
@@ -114,18 +114,19 @@ var FixedList = (function invocation() {
                     array.push(data[i]);
                 }
             }
-            // console.log(array.join(''));
+            // console.logger(array.join(''));
             prtNode.innerHTML = array.join('');
             var divU = document.getElementById('divBlankU');
             var divD = document.getElementById('divBlankD');
             divU.style.height = uh + 'px';
             var restData = data.slice(unit, length);            //剩余的内容
             divBlankDH = Math.ceil(restData.length / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
-            console.log(divBlankDH);
+            console.logger(divBlankDH);
             divD.style.height = divBlankDH + 'px';
         } else {
+            console.logger('当前页：    ' + page + '   数据长度：     ' + length);
             //如果当前所在页已经超出了新数据的长度
-            if (length < (page + 1) * unit) {
+            if (length < (page) * unit) {
                 prtNode.innerHTML = '';     //刷新置空
                 var totalPage = Math.ceil(length / unit);
                 var ar = [];
@@ -138,8 +139,8 @@ var FixedList = (function invocation() {
                 divBlankUH = Math.ceil((totalPage - 2) * unit / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
                 document.getElementById('divBlankU').style.height = uh + 'px';
                 document.getElementById('divBlankD').style.height = '0px';
-                console.log("超出页面，需处理");
-                page = totalPage;
+                console.logger("超出页面，需处理");
+                page = totalPage - 1;
             } else {
                 prtNode.innerHTML = '';     //刷新置空
                 var arr = [];
@@ -149,7 +150,7 @@ var FixedList = (function invocation() {
                 }
                 arr.push(divBlankDContent);
                 prtNode.innerHTML = arr.join('');
-                console.log(uh);
+                console.logger(uh);
                 document.getElementById('divBlankU').style.height = uh + 'px';
                 var rest = data.slice(unit * (page + 1), length);            //剩余的内容
                 divBlankDH = Math.ceil(rest.length / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
@@ -164,9 +165,9 @@ var FixedList = (function invocation() {
      */
     function calChildHeight() {
         var childNode = prtNode.childNodes[1];
-        // console.log(prtNode);
-        // console.log(childNode);
-        //console.log(childNode.clientHeight);
+        // console.logger(prtNode);
+        // console.logger(childNode);
+        //console.logger(childNode.clientHeight);
         return childNode.clientHeight;
     }
 
@@ -242,7 +243,7 @@ var FixedList = (function invocation() {
      * @param isLast 是否最后一页
      */
     function deletePage(isPre, isLast) {
-        console.log(unit);
+        console.logger(unit);
         var childNodes = document.getElementsByClassName(childClassName);
         var length = childNodes.length;
         //循环删除数组，倒序删除
@@ -253,7 +254,7 @@ var FixedList = (function invocation() {
             }
         } else {
             if (isLast) {
-                console.log(parseInt(length / unit) * unit);
+                console.logger(parseInt(length / unit) * unit);
                 for (var k = length - 1; k >= parseInt(length / unit) * unit; k--) {
                     // childNodes[k].parentNode.removeChild(childNodes[k]);
                     domDelete(childNodes[k]);
@@ -273,7 +274,7 @@ var FixedList = (function invocation() {
      */
     function domDelete(node) {
         if (typeof(jQuery) == "undefined") {
-            console.log("未引用jQuery库");
+            // console.logger("未引用jQuery库");
             node.parentNode.removeChild(node);
             node = null;
         } else {
@@ -295,7 +296,7 @@ var FixedList = (function invocation() {
      */
     function listen() {
         if (isFunction(eventListener)) {
-            console.log('绑定监听');
+            console.logger('绑定监听');
             eventListener();
         }
     }
@@ -317,9 +318,9 @@ var FixedList = (function invocation() {
             var divD = document.getElementById('divBlankD');
             if (!bl) {
                 if (dHeight > (page + 1) * unitHeight - unitHeight * 0.2) {
-                    console.log(dHeight);
-                    console.log(unitHeight);
-                    console.log(page);
+                    // console.logger(dHeight);
+                    // console.logger(unitHeight);
+                    // console.logger(page);
                     //如果此时剩余数据长度大于单元数据长度
                     if (data.length - (page + 1) * unit > unit) {
                         domInsertBy(data.slice((page + 1) * unit, (page + 2) * unit), prtNode, divD, true);
@@ -328,27 +329,27 @@ var FixedList = (function invocation() {
                         if (page >= 1) {
                             deletePage(true);
                             divU.style.height = (unitHeight * (page)) + 'px';
-                            console.log(divU.style.height);
+                            console.logger(divU.style.height);
                         }
                     } else {
                         domInsertBy(data.slice((page + 1) * unit, data.length), prtNode, divD, true);
                         divD.style.height = '0px';
-                        console.log("最后一页");
+                        console.logger("最后一页");
                         if (page >= 1) {
                             deletePage(true);
                             divU.style.height = (unitHeight * (page)) + 'px';
-                            console.log(divU.style.height);
+                            console.logger(divU.style.height);
                         }
                     }
                     page += 1;
                 }
             } else {
                 if (dHeight < (page) * unitHeight - unitHeight * 0.3) {
-                    console.log(dHeight);
-                    console.log(unitHeight);
-                    console.log(page);
+                    // console.logger(dHeight);
+                    // console.logger(unitHeight);
+                    console.logger('向上滑动当前页         ' + page);
                     if (data.length - page * unit < unit) {
-                        console.log("末尾添加");
+                        console.logger("末尾添加");
                         deletePage(false, true);
                         domInsertBy(data.slice((page - 2) * unit, (page - 1) * unit), prtNode, prtNode.childNodes[1], true);
                         divU.style.height = (unitHeight * (page - 2)) + 'px';
@@ -369,11 +370,11 @@ var FixedList = (function invocation() {
      * 是否打印到控制台
      * @param obj
      */
-    // console.log = function(obj) {
-    //     if (isDebug) {
-    //         console.log(obj);
-    //     }
-    // };
+    console.logger = function(obj) {
+        if (isDebug) {
+            console.log(obj);
+        }
+    };
 
     return FixedList;
 }());
