@@ -6,8 +6,8 @@ var FixedList = (function invocation() {
     var divBlankUH,     //上方显示空白区域高度
         divBlankDH,     //下方显示空白区域高度
         prtNode,        //父节点
-        divBlankUContent = '<div id="divBlankU" style="position: relative"></div>',//上方显示空白区域
-        divBlankDContent = '<div id="divBlankD" style="position: relative"></div>',//下方显示空白区域
+        divBlankUContent,//上方显示空白区域
+        divBlankDContent,//下方显示空白区域
         lastScrollTop = 0,   //上次滑动的位置
         currentScrollTop = 0,//当前滑动的位置
         unit = 0,       //单元所充的元素个数
@@ -18,6 +18,9 @@ var FixedList = (function invocation() {
         page = 0,           //页数
         func,           //生产函数
         dataType,       //数据类型
+        prtId,          //父节点id
+        divUId,         //上方显示空白区域ID
+        divDId,         //下方显示空白区域ID
         TYPE_JSON = 0,
         TYPE_STRING = 1,
         TYPE_OBJECT = 2,
@@ -35,6 +38,11 @@ var FixedList = (function invocation() {
      */
     function FixedList(parentNode, dat, function1) {
         prtNode = parentNode;
+        prtId = prtNode.id;
+        divBlankUContent = '<div id=' + 'divBlankU-' + prtId + ' style="position: relative"></div>';//上方显示空白区域
+        divBlankDContent = '<div id=' + 'divBlankD-' + prtId + ' style="position: relative"></div>';//下方显示空白区域
+        divUId = 'divBlankU-' + prtId;
+        divDId = 'divBlankD-' + prtId;
         func = function1;
         data = handleData(dat);
     }
@@ -57,7 +65,7 @@ var FixedList = (function invocation() {
             initData();
         } else {
             data = handleData(dat);
-            var divU = document.getElementById('divBlankU');
+            var divU = document.getElementById(divUId);
             var uh = parseInt(divU.style.height);
             replaceHtml(uh);
         }
@@ -78,29 +86,6 @@ var FixedList = (function invocation() {
         return this;
     };
 
-    function initData() {
-        childClassName = getChildClassName(data);
-        prtNode.innerHTML = '';     //初始化置空
-        var array = [];
-        var length = data.length;
-        array.push(divBlankUContent);
-        if (length > unit) {
-            for (var k = 0; k < unit; k++) {
-                array.push(data[k]);
-            }
-            array.push(divBlankDContent);
-        } else {
-            for (var i = 0; i < length; i++) {
-                array.push(data[i]);
-            }
-        }
-        prtNode.innerHTML = array.join('');
-        var restData = data.slice(unit, length);            //剩余的内容
-        divBlankDH = Math.ceil(restData.length / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
-        document.getElementById('divBlankD').style.height = divBlankDH + 'px';
-        scroll();
-    }
-
     /**
      * 添加监听函数
      * @param listener
@@ -112,6 +97,25 @@ var FixedList = (function invocation() {
     };
 
     /**
+     * 替换节点
+     * @param data  单个子view的数据
+     * @param parentNode
+     * @param childNode
+     */
+    FixedList.prototype.replaceNode = function (data, parentNode, childNode) {
+        var dat = handleData(data);
+        var div = document.createElement('div');
+        var frag = document.createDocumentFragment();
+        div.innerHTML = dat;
+        var nodes = div.childNodes;
+        for (var k = 0; k < nodes.length; k++) {
+            var node = nodes[k];
+            frag.appendChild(node.cloneNode(true));
+        }
+        parentNode.replaceChild(frag, childNode);
+    };
+
+    /**
      * 获取列表数据
      * @returns {*}
      */
@@ -119,6 +123,29 @@ var FixedList = (function invocation() {
         return data;
     };
 
+    function initData() {
+        childClassName = getChildClassName(data);
+        prtNode.innerHTML = '';     //初始化置空
+        var array = [];
+        var length = data.length;
+        array.push(divBlankUContent);
+        if (length > unit) {
+            for (var k = 0; k < unit; k++) {
+                array.push(data[k]);
+            }
+        } else {
+            for (var i = 0; i < length; i++) {
+                array.push(data[i]);
+            }
+        }
+        array.push(divBlankDContent);
+        prtNode.innerHTML = array.join('');
+        var restData = data.slice(unit, length);            //剩余的内容
+        divBlankDH = Math.ceil(restData.length / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
+        console.log(divDId);
+        document.getElementById(divDId).style.height = divBlankDH + 'px';
+        scroll();
+    }
 
     /**
      * 替换html
@@ -134,15 +161,15 @@ var FixedList = (function invocation() {
                 for (var k = 0; k < unit; k++) {
                     array.push(data[k]);
                 }
-                array.push(divBlankDContent);
             } else {
                 for (var i = 0; i < length; i++) {
                     array.push(data[i]);
                 }
             }
+            array.push(divBlankDContent);
             prtNode.innerHTML = array.join('');
-            var divU = document.getElementById('divBlankU');
-            var divD = document.getElementById('divBlankD');
+            var divU = document.getElementById(divUId);
+            var divD = document.getElementById(divDId);
             divU.style.height = uh + 'px';
             var restData = data.slice(unit, length);            //剩余的内容
             divBlankDH = Math.ceil(restData.length / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
@@ -160,8 +187,8 @@ var FixedList = (function invocation() {
                 ar.push(divBlankDContent);
                 prtNode.innerHTML = ar.join('');
                 divBlankUH = Math.ceil((totalPage - 2) * unit / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
-                document.getElementById('divBlankU').style.height = divBlankUH + 'px';
-                document.getElementById('divBlankD').style.height = '0px';
+                document.getElementById(divUId).style.height = divBlankUH + 'px';
+                document.getElementById(divDId).style.height = '0px';
                 page = totalPage - 1;
             } else {
                 prtNode.innerHTML = '';     //刷新置空
@@ -172,10 +199,10 @@ var FixedList = (function invocation() {
                 }
                 arr.push(divBlankDContent);
                 prtNode.innerHTML = arr.join('');
-                document.getElementById('divBlankU').style.height = uh + 'px';
+                document.getElementById(divUId).style.height = uh + 'px';
                 var rest = data.slice(unit * (page + 1), length);            //剩余的内容
                 divBlankDH = Math.ceil(rest.length / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
-                document.getElementById('divBlankD').style.height = divBlankDH + 'px';
+                document.getElementById(divDId).style.height = divBlankDH + 'px';
             }
         }
     }
@@ -225,6 +252,7 @@ var FixedList = (function invocation() {
             frag.appendChild(node.cloneNode(true));
         }
         _div.appendChild(frag);
+        console.log(_div.firstChild.getAttribute('class'));
         return _div.firstChild.getAttribute('class');
     }
 
@@ -255,24 +283,6 @@ var FixedList = (function invocation() {
         }
     }
 
-    /**
-     * 替换节点
-     * @param data
-     * @param parentNode
-     * @param childNode
-     */
-    function replaceNode(data, parentNode, childNode) {
-        var dat = handleData(data);
-        var div = document.createElement('div');
-        var frag = document.createDocumentFragment();
-        div.innerHTML = dat;
-        var nodes = div.childNodes;
-        for (var k = 0; k < nodes.length; k++) {
-            var node = nodes[k];
-            frag.appendChild(node.cloneNode(true));
-        }
-        parentNode.replaceChild(frag, childNode);
-    }
 
     /**
      * 批量删除节点
@@ -415,8 +425,8 @@ var FixedList = (function invocation() {
             var dHeight = nDivHeight + nScrollTop;
             var unitHeight = parseInt(calChildHeight()) * unit / cols;
             var bl = isScrollUp(prtNode);
-            var divU = document.getElementById('divBlankU');
-            var divD = document.getElementById('divBlankD');
+            var divU = document.getElementById(divUId);
+            var divD = document.getElementById(divDId);
             if (!bl) {
                 if (dHeight > (page + 1) * unitHeight - unitHeight * 0.25) {
                     //如果此时剩余数据长度大于单元数据长度
