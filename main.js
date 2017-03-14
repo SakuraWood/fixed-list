@@ -14,18 +14,19 @@ function start() {
     }
     var parentNode = document.getElementById('parent');
     fixList = new FixedList(parentNode, data);
-    fixList.init(2, 20);
+    fixList.initList(2, 20);
     fixList.setEventListener(function () {
         var prt = document.getElementById('parent');
         prt.addEventListener('click', function (e) {
             console.log(e.target.id);
         });
     });
+
 }
 
 function setIntervala() {
     start();
-    setInterval(ref, 5000);
+    // setInterval(ref, 5000);
 }
 
 function ref() {

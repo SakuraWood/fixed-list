@@ -2,38 +2,57 @@
  * Created by Lee Sure on 2017/3/8.
  */
 ;
-function FixedList(parentNode, dat, function1) {
-    var isDebug = false,
-        divBlankUH,     //上方显示空白区域高度
+var FixedList = (function invocation() {
+    var divBlankUH,     //上方显示空白区域高度
         divBlankDH,     //下方显示空白区域高度
+        prtNode,        //父节点
+        divBlankUContent,//上方显示空白区域
+        divBlankDContent,//下方显示空白区域
         lastScrollTop = 0,   //上次滑动的位置
         currentScrollTop = 0,//当前滑动的位置
         unit = 0,       //单元所充的元素个数
         cols = 0,       //列数
         childClassName, //子view的class名
+        data,           //数据源
         eventListener,  //事件监听
         page = 0,           //页数
+        func,           //生产函数
         dataType,       //数据类型
+        prtId,          //父节点id
+        divUId,         //上方显示空白区域ID
+        divDId,         //下方显示空白区域ID
         TYPE_JSON = 0,
         TYPE_STRING = 1,
         TYPE_OBJECT = 2,
         TYPE_SINGLE_STR = 3,
         TYPE_SINGLE_OBJ = 4,
-        prtNode = parentNode,
-        prtId = prtNode.id,
-        divBlankUContent = '<div id=' + 'divBlankU-' + prtId + ' style="position: relative"></div>',//上方显示空白区域
-        divBlankDContent = '<div id=' + 'divBlankD-' + prtId + ' style="position: relative"></div>',//下方显示空白区域
-        divUId = 'divBlankU-' + prtId,
-        divDId = 'divBlankD-' + prtId,
-        func = function1,      //生产函数
-        statesFunc = undefined,
+        isDebug = false;
+
+    /**
+     * 构造函数
+     * @param parentNode    父节点
+     * @param dat          数据       可选参数
+     * @param function1     生产函数    可选参数
+     * @constructor
+     */
+    function FixedList(parentNode, dat, function1) {
+        prtNode = parentNode;
+        prtId = prtNode.id;
+        divBlankUContent = '<div id=' + 'divBlankU-' + prtId + ' style="position: relative"></div>';//上方显示空白区域
+        divBlankDContent = '<div id=' + 'divBlankD-' + prtId + ' style="position: relative"></div>';//下方显示空白区域
+        divUId = 'divBlankU-' + prtId;
+        divDId = 'divBlankD-' + prtId;
+        func = function1;
         data = handleData(dat);
+
+
+    }
 
     /**
      * 获取父节点
      * @returns {*}
      */
-    this.getParentNode = function () {
+    FixedList.prototype.getParentNode = function () {
         return prtNode;
     };
 
@@ -41,7 +60,7 @@ function FixedList(parentNode, dat, function1) {
      * 获取父节点
      * @returns {*}
      */
-    this.getDivU = function () {
+    FixedList.prototype.getDivU = function () {
         return divUId;
     };
 
@@ -49,7 +68,7 @@ function FixedList(parentNode, dat, function1) {
      * 更新list数据流
      * @param dat
      */
-    this.refreshData = function (dat) {
+    FixedList.prototype.refreshData = function (dat) {
         if (data == undefined) {
             data = handleData(dat);
             initData();
@@ -66,10 +85,9 @@ function FixedList(parentNode, dat, function1) {
      * @param cls  列数
      * @param unt   每一个集群所包含的数目
      */
-    this.initList = function (cls, unt, func) {
+    FixedList.prototype.initList = function (cls, unt) {
         cols = cls;
         unit = unt;
-        statesFunc = func;
         if (data === undefined) {
             return this;
         }
@@ -81,7 +99,7 @@ function FixedList(parentNode, dat, function1) {
      * 添加监听函数
      * @param listener
      */
-    this.setEventListener = function (listener) {
+    FixedList.prototype.setEventListener = function (listener) {
         eventListener = listener;
         //添加后立即执行
         listen();
@@ -93,7 +111,7 @@ function FixedList(parentNode, dat, function1) {
      * @param parentNode
      * @param childNode
      */
-    this.replaceNode = function (data, parentNode, childNode) {
+    FixedList.prototype.replaceNode = function (data, parentNode, childNode) {
         var dat = handleData(data);
         var div = document.createElement('div');
         var frag = document.createDocumentFragment();
@@ -110,7 +128,7 @@ function FixedList(parentNode, dat, function1) {
      * 获取列表数据
      * @returns {*}
      */
-    this.getDatas = function () {
+    FixedList.prototype.getDatas = function () {
         return data;
     };
 
@@ -134,7 +152,7 @@ function FixedList(parentNode, dat, function1) {
         var restData = data.slice(unit, length);            //剩余的内容
         divBlankDH = Math.ceil(restData.length / cols) * parseInt(calChildHeight());//初始化时下方空白区域的高度
         document.getElementById(divDId).style.height = divBlankDH + 'px';
-        scroll(statesFunc);
+        scroll();
     }
 
     /**
@@ -406,7 +424,7 @@ function FixedList(parentNode, dat, function1) {
     /**
      * 滚动函数
      */
-    function scroll(statesFunc) {
+    function scroll() {
         page = 0;       //初始化时为第0页
         console.log(prtNode.id);
         prtNode.addEventListener('scroll', function () {
@@ -454,7 +472,18 @@ function FixedList(parentNode, dat, function1) {
                     page -= 1;
                 }
             }
-            statesFunc();
         });
     }
-}
+
+    /**
+     * 是否打印到控制台
+     * @param obj
+     */
+    // //console.log = function (obj) {
+    //     if (isDebug) {
+    //         //console.log(obj);
+    //     }
+    // };
+
+    return FixedList;
+}());
