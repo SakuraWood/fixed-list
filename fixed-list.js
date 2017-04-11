@@ -1,13 +1,561 @@
 /**
- * Created by Lee Sure on 2017/3/8.
+ * Created by Lee Sure on 2017/4/8.
  */
-;(function() {
-    /** Used as a safe reference for `undefined` in pre-ES5 environments. */
-    var undefined;
+;(function (name, factory) {
+    //导出为CMD规范的模块
+    if (typeof module === "object" && typeof module.exports === "object") {
+        module.exports = factory();
+    } else {
+        this[name] = factory();
+    }
+}('FixedList', function () {
+    'use strict';
 
-    /** Used as the semantic version number. */
-    var VERSION = '4.17.4';
+    var
+        version = '0.0.1',  //版本号
+        TYPE_JSON = 0,      //JSON数据
+        TYPE_STRING = 1,    //string 类数据
+        TYPE_OBJECT = 2,    //object 类数据
+        TYPE_SINGLE_STR = 3, //单个string
+        TYPE_SINGLE_OBJ = 4, //单个object
 
+        /**
+         * 生成FixedList，并初始化部分数据
+         * @param parentNode 父节点
+         * @param dat   原始数据
+         * @param produceFunc   生产函数
+         * @constructor
+         */
+        FixedList = function (parentNode, dat, produceFunc) {
+            var self = this;
+            self.prtNode = parentNode;
+            self.data = self._handleData(dat);
+            self.produceFunc = produceFunc;
+            self.prtId = self.prtNode.id;
+            self.divBlankUContent
+                = '<div id=' + 'divBlankU-' + self.prtId + ' style="position: relative;"></div>';//上方空白区域
+            self.divBlankDContent
+                = '<div id=' + 'divBlankD-' + self.prtId + ' style="position: relative;"></div>';//下方空白区域
+            self.listType = 0;           //0代表纵向列表，1代表横向列表，默认为0
+            self.divUId = 'divBlankU-' + self.prtId;
+            self.divDId = 'divBlankD-' + self.prtId;
+            self.oldTop = self.prtNode.scrollTop;
+        };
+
+    FixedList.prototype = {
+        /**
+         * 初始化列表显示
+         * @param cls 表示列表有几列
+         * @param unt 表示一个单位内显示的数量
+         * @param statesFunc 状态函数
+         * @param type 类型
+         * @returns {FixedList}
+         */
+        initList: function (cls, unt, statesFunc, type) {
+            this.cols = cls;
+            this.unit = unt;
+            this.statesFunc = statesFunc;
+            this.type = type;
+
+            type != null ? this.listType = type : void 0;
+            if (data === undefined) {
+                return this;
+            }
+            this._initData();
+        },
+
+        /**
+         * 设置监听函数并立即启用监听
+         * @param listener 监听函数
+         */
+        setEventListener: function (listener) {
+            this.eventListener = listener;
+            this._listen();
+        },
+
+        /**
+         * 设置数据
+         * @param data 需要设置的数据源
+         */
+        setDatas: function (data) {
+            this.data = this._handleData(data);
+        },
+
+        /**
+         * 获取父节点
+         * @returns {*}
+         */
+        getParentNode: function () {
+            return this.prtNode;
+        },
+
+        /**
+         * 获取是否正在滑动
+         * @returns {boolean}
+         */
+        isScrolling: function () {
+            return this.isScroll;
+        },
+
+        /**
+         * 刷新数据
+         * @param dat 需要刷新的数据源
+         */
+        refreshData: function (dat) {
+            if (dat.length == 0 || dat == null) {
+                this.prtNode.innerHTML = '';
+            } else {
+                if (this.data == undefined) {
+                    this.data = this._handleData(dat);
+                    this._initData();
+                } else {
+                    console.time(1);
+                    var bl = this._compareToOld(dat.slice(this.page > 0 ? (this.page) * this.unit : 0, dat.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : dat.length),
+                        this.olddata.slice(this.page > 0 ? (this.page) * this.unit : 0, dat.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : dat.length));
+                    console.log('是否数据一样    ' + bl);
+                    if (bl) {
+                    } else {
+                        this.data = this._handleData(dat);
+                        this._replaceHtml();
+                    }
+                    console.timeEnd(1);
+                    this.olddata = data;
+                }
+            }
+        },
+
+        /**
+         * 是否向上滑
+         * @param parentNode 父节点
+         * @returns {boolean}
+         */
+        _isScrollUp: function (parentNode) {
+            this.currentScrollTop = this.listType == 0 ? parentNode.scrollTop : parentNode.scrollLeft;
+            var direction = this.currentScrollTop < this.lastScrollTop;
+            this.lastScrollTop = this.currentScrollTop;
+            return direction;
+        },
+
+        /**
+         * 滑动函数，包括三种滑动监听: 1.记录页数 2.记录是否正在滑动 3.节流函数，防止页面频繁刷新
+         * @param self 列表本身
+         * @private
+         */
+        _scroll: function (self) {
+            self.page = 0;       //初始化时为第0页
+            self.prtNode.addEventListener('scroll', function () {
+                self._realFunc(self);
+                self._isScrolling(self);
+                throttle(function () {
+                    if (self.hasChangePage) {
+                        if (!self._isScrollUp(self.prtNode)) {
+                            self._replaceContent(self.page - 1);
+                        } else {
+                            self._replaceContent(self.page - 1);
+                        }
+                        self._statesFunction();
+                        self.hasChangePage = false;
+                    }
+                }, 200);
+            }, false);
+            self.prtNode.addEventListener('scroll', throttle(function () {
+                if (self.hasChangePage) {
+                    if (!self._isScrollUp(self.prtNode)) {
+                        self._replaceContent(self.page - 1);
+                    } else {
+                        self._replaceContent(self.page - 1);
+                    }
+                    self._statesFunction();
+                    self.hasChangePage = false;
+                }
+            }, 200), false);
+        },
+
+        /**
+         * 记录页数，每一次滑动所改变的当前页，在页面页码号改变时，置hasChangePage标志为true
+         * @param self 列表本身
+         * @private
+         */
+        _realFunc: function (self) {
+            // do something...
+            var nDivHeight = self.listType == 0 ? self.prtNode.clientHeight : self.prtNode.clientWidth;
+            var nScrollTop = self.listType == 0 ? self.prtNode.scrollTop : self.prtNode.scrollLeft; //滚动到的当前位置
+            var dHeight = nDivHeight + nScrollTop;
+            var bl = self._isScrollUp(self.prtNode);
+            if (!bl) {
+                if (dHeight > (self.page + 1) * self.unitHeight - self.unitHeight * 0.2) {
+                    self.page += 1;
+                    self.hasChangePage = true;
+                }
+            } else {
+                if (dHeight < (self.page) * self.unitHeight - self.unitHeight * 0.4) {
+                    self.page -= 1;
+                    self.hasChangePage = true;
+                }
+            }
+        },
+
+        /**
+         * 记录是否正在滑动
+         * @param self 列表本身
+         * @private
+         */
+        _isScrolling: function (self) {
+            self.scrollTimer ? clearTimeout(self.scrollTimer) : void 0;
+            var newTop = self.listType == 0 ? self.prtNode.scrollTop : self.prtNode.scrollLeft;
+            if (newTop === self.oldTop) {
+                clearTimeout(self.scrollTimer);
+                // console.log('停止滑动');
+                self.isScroll = false;
+            } else {
+                self.oldTop = newTop;
+                self.scrollTimer = setTimeout(function () {
+                    self._isScrolling(self);
+                }, 1500);
+                self.isScroll = true;
+            }
+        },
+
+        /**
+         * 监听函数
+         * @private
+         */
+        _listen: function () {
+            if (isFunction(this.eventListener)) {
+                this.eventListener();
+            }
+        },
+
+        /**
+         * 处理原始数据源
+         * @param data 原始数据源
+         * @returns {*}
+         * @private
+         */
+        _handleData: function (data) {
+            var dat;
+            try {
+                dat = JSON.parse(data);
+                this.dataType = TYPE_JSON;
+            } catch (err) {
+                try {
+                    if (typeof(data[0]) == 'string' && !(typeof (data) == 'string')) {
+                        this.dataType = TYPE_STRING;
+                        dat = data;
+                    } else if (typeof(data[0]) == 'object') {
+                        this.dataType = TYPE_OBJECT;
+                        dat = data;
+                    } else if (typeof (data) == 'string') {
+                        this.dataType = TYPE_SINGLE_STR;
+                        dat = data;
+                    } else if (typeof(data) == 'object' && !(typeof(data[0]) == 'object')) {
+                        this.dataType = TYPE_SINGLE_OBJ;
+                        dat = data;
+                    }
+                } catch (e) {
+
+                }
+            }
+            return data.length === 0 ? void 0 : this._produceData(dat, this.dataType);
+        },
+
+        /**
+         * 根据生产函数将数据转化为html字符串，以供之后innerHtml使用
+         * @param dat 原始数据源
+         * @param type 数据类型
+         * @returns {*}
+         * @private
+         */
+        _produceData: function (dat, type) {
+            var dt;
+            var content = [];
+            switch (type) {
+                case TYPE_JSON:
+                case TYPE_OBJECT:
+                    for (var k = 0; k < dat.length; k++) {
+                        content.push(this.produceFunc(dat[k]));
+                    }
+                    dt = content;
+                    break;
+                case TYPE_STRING:
+                    dt = dat;
+                    break;
+                case TYPE_SINGLE_OBJ:
+                    content.push(this.produceFunc(dat));
+                    dt = content;
+                    break;
+                case TYPE_SINGLE_STR:
+                    content.push(dat);
+                    dt = content;
+                    break;
+                default:
+                    break;
+            }
+            return dt;
+        },
+
+        /**
+         * 替换html
+         * @private
+         */
+        _replaceHtml: function () {
+            var length = this.data.length;
+            if (this.page == 0) {
+                var restData = this.data.slice(this.unit, length);            //剩余的内容
+                this.divBlankDH = Math.ceil(restData.length / this.cols) * parseInt(this.cardHeight);//初始化时下方空白区域的高度
+                this._replaceContent(this.page - 1);
+            } else {
+                //如果当前所在页已经超出了新数据的长度
+                if (length < (this.page) * this.unit) {
+                    document.getElementById(divDId).style.height = '0px';
+                    this.page = Math.ceil(length / this.unit);
+                    this.divBlankUH = Math.ceil((this.page - 2) * this.unit / this.cols) * parseInt(this.cardHeight);//初始化时下方空白区域的高度
+                    this._replaceContent(this.page - 1);
+                } else {
+                    this.divBlankDH = Math.ceil(data.slice(this.unit, length).length / this.cols) * parseInt(this.cardHeight);//初始化时下方空白区域的高度
+                    this._replaceContent(this.page - 1);
+                }
+            }
+        },
+
+        /**
+         * 移除所有子节点
+         * @private
+         */
+        _removeAll: function () {
+            if (typeof(jQuery) == "undefined") {
+                this.prtNode.empty();
+            } else {
+                while (this.prtNode.hasChildNodes()) {
+                    this.prtNode.innerHTML = '';
+                }
+            }
+        },
+
+        /**
+         * 根据页码号替换html内容
+         * @param page 页码号
+         * @private
+         */
+        _replaceContent: function (page) {
+            if (page >= -1) {
+                this._removeAll();
+                var content = [];
+                var frag = document.createDocumentFragment();
+                var div = document.createElement('div');
+                var dat;
+                if (this.data.length - (page + 1) * this.unit > this.unit) {
+                    dat = this.data.slice(page > 0 ? (page) * this.unit : 0, (page + 2) * this.unit);
+                } else {
+                    dat = this.data.slice(page > 0 ? (page) * this.unit : 0, this.data.length);
+                }
+                content.push(this.divBlankUContent);
+                for (var i = 0; i < dat.length; i++) {
+                    content.push(dat[i]);
+                }
+                content.push(this.divBlankDContent);
+                div.innerHTML = content.join('');
+                var nodes = div.childNodes;
+                for (var k = 0; k < nodes.length; k++) {
+                    var node = nodes[k];
+                    frag.appendChild(node.cloneNode(true));
+                }
+                this.prtNode.appendChild(frag);
+                var divU = document.getElementById(this.divUId);
+                var divD = document.getElementById(this.divDId);
+                this.listType == 0 ? divD.style.height = (this.divBlankDH - (page + 1) * this.unitHeight) + 'px'
+                    : divD.style.width = (this.divBlankDH - (page + 1) * this.unitHeight) + 'px';
+                this.listType == 0 ? document.getElementById(this.divDId).style.width = '100%'
+                    : document.getElementById(this.divDId).style.display = 'inline-block';
+                this.listType == 0 ? divU.style.height = (this.unitHeight * (page)) + 'px'
+                    : divU.style.width = (this.unitHeight * (page)) + 'px';
+                this.listType == 0 ? document.getElementById(this.divUId).style.width = '100%'
+                    : document.getElementById(this.divUId).style.display = 'inline-block';
+                console.log('渲染页面');
+            }
+        },
+
+        /**
+         * 插入节点
+         * @param data
+         * @param parentNode
+         * @param childNode
+         * @param isPre
+         * @private
+         */
+        _domInsertBy: function (data, parentNode, childNode, isPre) {
+            var content = [];
+            var frag = document.createDocumentFragment();
+            var div = document.createElement('div');
+            for (var i = 0; i < data.length; i++) {
+                content.push(data[i]);
+            }
+            div.innerHTML = content.join('');
+            var nodes = div.childNodes;
+            for (var k = 0; k < nodes.length; k++) {
+                var node = nodes[k];
+                frag.appendChild(node.cloneNode(true));
+            }
+            if (isPre) {
+                parentNode.insertBefore(frag, childNode);
+            } else {
+                parentNode.appendChild(frag);
+            }
+        },
+
+        /**
+         * 删除一页
+         * @param isPre
+         * @param isLast
+         * @private
+         */
+        _deletePage: function (isPre, isLast) {
+            var childNodes = document.getElementsByClassName(this.childClassName);
+            var length = childNodes.length;
+            //循环删除数组，倒序删除
+            if (isPre) {
+                for (var i = this.unit - 1; i >= 0; i--) {
+                    this._domDelete(childNodes[i]);
+                }
+            } else {
+                if (isLast) {
+                    for (var k = length - 1; k >= parseInt(length / this.unit) * this.unit; k--) {
+                        this._domDelete(childNodes[k]);
+                    }
+                } else {
+                    for (var j = length - 1; j >= length - this.unit; j--) {
+                        this._domDelete(childNodes[j]);
+                    }
+                }
+            }
+        },
+
+        /**
+         * 删除节点
+         * @param node
+         * @private
+         */
+        _domDelete: function (node) {
+            if (typeof(jQuery) == "undefined") {
+                node.parentNode.removeChild(node);
+                node = null;
+            } else {
+                $(node).remove();
+            }
+        },
+
+        /**
+         * 根据数据初始化显示，启用scroll监听函数
+         * @private
+         */
+        _initData: function () {
+            this.olddata = this.data;
+            this.childClassName = this._getChildClassName(this.data);
+            this.prtNode.innerHTML = '';     //初始化置空
+            var array = [];
+            var length = this.data.length;
+            array.push(this.divBlankUContent);
+            if (length > this.unit) {
+                for (var k = 0; k < this.unit; k++) {
+                    array.push(this.data[k]);
+                }
+            } else {
+                for (var i = 0; i < length; i++) {
+                    array.push(this.data[i]);
+                }
+            }
+            array.push(this.divBlankDContent);
+            this.prtNode.innerHTML = array.join('');
+            var restData = this.data.slice(this.unit, length);            //剩余的内容
+            this.cardHeight = this._calChildHeight();
+            console.log('item的高度     ' + this.cardHeight);
+            this.unitHeight = parseInt(this.cardHeight) * this.unit / this.cols;
+            this.divBlankDH = Math.ceil(restData.length / this.cols) * parseInt(this.cardHeight);//初始化时下方空白区域的高度
+            this.listType == 0 ? document.getElementById(this.divUId).style.height = '0px'
+                : document.getElementById(this.divUId).style.width = '0px';
+            this.listType == 0 ? document.getElementById(this.divUId).style.width = '100%'
+                : document.getElementById(this.divUId).style.display = 'inline-block';
+            this.listType == 0 ? document.getElementById(this.divDId).style.height = this.divBlankDH + 'px'
+                : document.getElementById(this.divDId).style.width = this.divBlankDH + 'px';
+            this.listType == 0 ? document.getElementById(this.divDId).style.width = '100%'
+                : document.getElementById(this.divDId).style.display = 'inline-block';
+            this._scroll(this);
+        },
+
+        /**
+         * 新旧数据比对，如果新数据和旧数据无区别，则不刷新
+         * @param newDataArray  新数据
+         * @param oldDataArray  旧数据
+         * @returns {boolean}
+         * @private
+         */
+        _compareToOld: function (newDataArray, oldDataArray) {
+            var bl = true;
+            for (var i = 0, j = oldDataArray.length; i < j; i++) {
+                if (!eq(newDataArray[i], oldDataArray[i])) {
+                    bl = false;
+                }
+            }
+            return bl;
+        },
+
+        /**
+         * 计算子节点高度，重要！这个函数意味着子节点高度必须固定！
+         * @returns {Number}
+         * @private
+         */
+        _calChildHeight: function () {
+            var childNode = this.prtNode.childNodes[1];
+            return this.listType == 0 ? parseInt($(childNode).css('height')) : parseInt($(childNode).css('width'));
+        },
+
+        /**
+         * 获取子节点的className
+         * @param data
+         * @returns {string}
+         * @private
+         */
+        _getChildClassName: function (data) {
+            var content = [];
+            var frag = document.createDocumentFragment();
+            var div = document.createElement('div');
+            var _div = document.createElement('div');
+            if (data.length > 0) {
+                for (var i = 0; i < 1; i++) {
+                    content.push(data[i]);
+                }
+            } else {
+                return;
+            }
+            div.innerHTML = content.join('');
+            var nodes = div.childNodes;
+            for (var k = 0; k < nodes.length; k++) {
+                var node = nodes[k];
+                frag.appendChild(node.cloneNode(true));
+            }
+            _div.appendChild(frag);
+            return _div.firstChild.getAttribute('class');
+        },
+
+        /**
+         * 状态函数，有可能会用到，因为在动态生成的机制下，一些列表状态需要额外记住
+         * @private
+         */
+        _statesFunction: function () {
+            isFunction(this.statesFunc) ? this.statesFunc() : void 0;
+        }
+    };
+
+    /**
+     * 判断是否为一个函数
+     * @param fn
+     * @returns {boolean}
+     */
+    function isFunction(fn) {
+        return Object.prototype.toString.call(fn) === '[object Function]';
+    }
+
+    /*----------------underscore methods--------------*/
     /** Error message constants. */
     var FUNC_ERROR_TEXT = 'Expected a function';
 
@@ -75,10 +623,6 @@
     /** Used to lookup unminified function names. */
     var realNames = {};
 
-    function lodash() {
-        // No operation performed.
-    }
-
     function baseGetTag(value) {
         if (value == null) {
             return value === undefined ? undefinedTag : nullTag;
@@ -88,6 +632,13 @@
             : objectToString(value);
     }
 
+    /**
+     * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+     *
+     * @private
+     * @param {*} value The value to query.
+     * @returns {string} Returns the raw `toStringTag`.
+     */
     function getRawTag(value) {
         var isOwn = hasOwnProperty.call(value, symToStringTag),
             tag = value[symToStringTag];
@@ -95,7 +646,8 @@
         try {
             value[symToStringTag] = undefined;
             var unmasked = true;
-        } catch (e) {}
+        } catch (e) {
+        }
 
         var result = nativeObjectToString.call(value);
         if (unmasked) {
@@ -112,7 +664,7 @@
         return nativeObjectToString.call(value);
     }
 
-    var now = function() {
+    var now = function () {
         return root.Date.now();
     };
 
@@ -233,6 +785,7 @@
             }
             return result;
         }
+
         debounced.cancel = cancel;
         debounced.flush = flush;
         return debounced;
@@ -295,607 +848,11 @@
             : (reIsBadHex.test(value) ? NAN : +value);
     }
 
-    /*------------------------------------------------------------------------*/
-
-    // Add methods that return wrapped values in chain sequences.
-    lodash.debounce = debounce;
-    lodash.throttle = throttle;
-
-    /*------------------------------------------------------------------------*/
-
-    // Add methods that return unwrapped values in chain sequences.
-    lodash.eq = eq;
-    lodash.isObject = isObject;
-    lodash.isObjectLike = isObjectLike;
-    lodash.isSymbol = isSymbol;
-    lodash.now = now;
-    lodash.toNumber = toNumber;
-
-    lodash.VERSION = VERSION;
-
-    /*--------------------------------------------------------------------------*/
-
-    if (typeof define == 'function' && typeof define.amd == 'object' && define.amd) {
-        root._ = lodash;
-
-        define(function() {
-            return lodash;
+    //导出为AMD规范的模块
+    if (typeof define === "function" && define.amd) {
+        define("fixed-list", [], function () {
+            return FixedList;
         });
     }
-    else if (freeModule) {
-        (freeModule.exports = lodash)._ = lodash;
-        freeExports._ = lodash;
-    }
-    else {
-        root._ = lodash;
-    }
-}.call(this));
-
-function FixedList(parentNode, dat, function1) {
-    var isDebug = false,
-        divBlankUH,     //上方显示空白区域高度
-        divBlankDH,     //下方显示空白区域高度
-        lastScrollTop = 0,   //上次滑动的位置
-        currentScrollTop = 0,//当前滑动的位置
-        unit = 0,       //单元所充的元素个数
-        cols = 0,       //列数
-        childClassName, //子view的class名
-        eventListener,  //事件监听
-        page = 0,           //页数
-        dataType,       //数据类型
-        TYPE_JSON = 0,
-        TYPE_STRING = 1,
-        TYPE_OBJECT = 2,
-        TYPE_SINGLE_STR = 3,
-        TYPE_SINGLE_OBJ = 4,
-        prtNode = parentNode,
-        prtId = prtNode.id,
-        cardHeight,
-        unitHeight,
-        divBlankUContent = '<div id=' + 'divBlankU-' + prtId + ' style="position: relative;"></div>',//上方显示空白区域
-        divBlankDContent = '<div id=' + 'divBlankD-' + prtId + ' style="position: relative;"></div>',//下方显示空白区域
-        divUId = 'divBlankU-' + prtId,
-        divDId = 'divBlankD-' + prtId,
-        func = function1,      //生产函数
-        statesFunc = undefined, //状态函数（用来记录dom节点状态，在滑动的时候保持记忆）
-        isScroll,
-        olddata,
-        data = handleData(dat),
-        listType = 0,           //0代表纵向列表，1代表横向列表，默认为0
-        scrollTimer = null;
-
-    /**
-     * 获取父节点
-     * @returns {*}
-     */
-    this.getParentNode = function () {
-        return prtNode;
-    };
-
-    /**
-     * 获取父节点
-     * @returns {*}
-     */
-    this.getDivU = function () {
-        return divUId;
-    };
-
-    /**
-     * 更新list数据流
-     * @param dat
-     */
-    this.refreshData = function (dat) {
-        if (dat.length == 0 || dat == null) {
-            prtNode.innerHTML = '';
-        } else {
-            if (data == undefined) {
-                data = handleData(dat);
-                initData();
-            } else {
-                console.time(1);
-                var bl = compareToOld(dat.slice(page > 0 ? (page) * unit : 0, dat.length - (page + 1) * unit > unit ? (page + 2) * unit : dat.length),
-                    olddata.slice(page > 0 ? (page) * unit : 0, dat.length - (page + 1) * unit > unit ? (page + 2) * unit : dat.length));
-                console.log('是否数据一样    ' + bl);
-                if (bl) {
-                } else {
-                    data = handleData(dat);
-                    replaceHtml();
-                }
-                console.timeEnd(1);
-                olddata = data;
-            }
-        }
-    };
-
-    /**
-     * 初始化list数据流
-     * @param cls  列数
-     * @param unt   每一个集群所包含的数目
-     * @param func
-     * @param type 0代表纵向列表，1代表横向列表
-     */
-    this.initList = function (cls, unt, func, type) {
-        cols = cls;
-        unit = unt;
-        statesFunc = func;
-        type != null ? listType = type : void 0;
-        if (data === undefined) {
-            return this;
-        }
-        initData();
-        return this;
-    };
-
-    /**
-     * 添加监听函数
-     * @param listener
-     */
-    this.setEventListener = function (listener) {
-        eventListener = listener;
-        //添加后立即执行
-        listen();
-    };
-
-    /**
-     * 替换节点
-     * @param data  单个子view的数据
-     * @param childNode
-     */
-    this.replaceNode = function (data, childNode) {
-        var dat = handleData(data);
-        var div = document.createElement('div');
-        var frag = document.createDocumentFragment();
-        div.innerHTML = dat;
-        var nodes = div.childNodes;
-        for (var k = 0; k < nodes.length; k++) {
-            var node = nodes[k];
-            frag.appendChild(node.cloneNode(true));
-        }
-        childNode.parentNode.replaceChild(frag, childNode);
-    };
-
-    /**
-     * 获取列表数据
-     * @returns {*}
-     */
-    this.getDatas = function () {
-        return data;
-    };
-
-    /**
-     * @param dat
-     * 改变数据
-     */
-    this.setDatas = function (dat) {
-        data = handleData(dat);
-    };
-
-    this.isScrolling = function () {
-        return isScroll;
-    };
-
-    function initData() {
-        olddata = data;
-        childClassName = getChildClassName(data);
-        prtNode.innerHTML = '';     //初始化置空
-        var array = [];
-        var length = data.length;
-        array.push(divBlankUContent);
-        if (length > unit) {
-            for (var k = 0; k < unit; k++) {
-                array.push(data[k]);
-            }
-        } else {
-            for (var i = 0; i < length; i++) {
-                array.push(data[i]);
-            }
-        }
-        array.push(divBlankDContent);
-        prtNode.innerHTML = array.join('');
-        var restData = data.slice(unit, length);            //剩余的内容
-        cardHeight = calChildHeight();
-        console.log('item的高度     ' + cardHeight);
-        unitHeight = parseInt(cardHeight) * unit / cols;
-        divBlankDH = Math.ceil(restData.length / cols) * parseInt(cardHeight);//初始化时下方空白区域的高度
-        listType == 0 ? document.getElementById(divUId).style.height = '0px'
-            : document.getElementById(divUId).style.width = '0px';
-        listType == 0 ? document.getElementById(divUId).style.width = '100%'
-            : document.getElementById(divUId).style.display = 'inline-block';
-        listType == 0 ? document.getElementById(divDId).style.height = divBlankDH + 'px'
-            : document.getElementById(divDId).style.width = divBlankDH + 'px';
-        listType == 0 ? document.getElementById(divDId).style.width = '100%'
-            : document.getElementById(divDId).style.display = 'inline-block';
-        scroll();
-    }
-
-    function compareToOld(newDataArray, oldDataArray) {
-        var bl = true;
-        for (var i = 0, j = oldDataArray.length; i < j; i++) {
-            if (!_.eq(newDataArray[i], oldDataArray[i])) {
-                bl = false;
-            }
-        }
-        return bl;
-    }
-
-    function replaceAllNode(uh) {
-        console.log('currentPage    ' + page);
-        var length = data.length;
-        var divDoc = document.createDocumentFragment();
-        if (page == 0) {
-            var array = [];
-            array.push(divBlankUContent);
-            if (length > unit) {
-                for (var k = 0; k < unit; k++) {
-                    array.push(data[k]);
-                }
-            } else {
-                for (var i = 0; i < length; i++) {
-                    array.push(data[i]);
-                }
-            }
-            array.push(divBlankDContent);
-            divDoc.innerHTML = array.join('');
-        }
-    }
-
-    /**
-     * 替换html
-     */
-    function replaceHtml() {
-        var length = data.length;
-        if (page == 0) {
-            var restData = data.slice(unit, length);            //剩余的内容
-            divBlankDH = Math.ceil(restData.length / cols) * parseInt(cardHeight);//初始化时下方空白区域的高度
-            replaceContent(page - 1);
-        } else {
-            //如果当前所在页已经超出了新数据的长度
-            if (length < (page) * unit) {
-                document.getElementById(divDId).style.height = '0px';
-                page = Math.ceil(length / unit);
-                divBlankUH = Math.ceil((page - 2) * unit / cols) * parseInt(cardHeight);//初始化时下方空白区域的高度
-                replaceContent(page - 1);
-            } else {
-                divBlankDH = Math.ceil(data.slice(unit, length).length / cols) * parseInt(cardHeight);//初始化时下方空白区域的高度
-                replaceContent(page - 1);
-            }
-        }
-    }
-
-    /**
-     * 计算子view的高度,data中包含的子view的高度要固定，否则计算错误
-     * @returns {number}
-     */
-    function calChildHeight() {
-        var childNode = prtNode.childNodes[1];
-        return listType == 0 ? parseInt($(childNode).css('height')) : parseInt($(childNode).css('width'));
-    }
-
-
-    /**
-     * 获取子节点的类名
-     * @param data
-     * @returns {string}
-     */
-    function getChildClassName(data) {
-        var content = [];
-        var frag = document.createDocumentFragment();
-        var div = document.createElement('div');
-        var _div = document.createElement('div');
-        if (data.length > 0) {
-            for (var i = 0; i < 1; i++) {
-                content.push(data[i]);
-            }
-        } else {
-            return;
-        }
-        div.innerHTML = content.join('');
-        var nodes = div.childNodes;
-        for (var k = 0; k < nodes.length; k++) {
-            var node = nodes[k];
-            frag.appendChild(node.cloneNode(true));
-        }
-        _div.appendChild(frag);
-        return _div.firstChild.getAttribute('class');
-    }
-
-    /**
-     * 插入节点
-     * @param data  数据
-     * @param parentNode    父节点
-     * @param childNode     子节点
-     * @param isPre         是否往前插入
-     */
-    function domInsertBy(data, parentNode, childNode, isPre) {
-        var content = [];
-        var frag = document.createDocumentFragment();
-        var div = document.createElement('div');
-        for (var i = 0; i < data.length; i++) {
-            content.push(data[i]);
-        }
-        div.innerHTML = content.join('');
-        var nodes = div.childNodes;
-        for (var k = 0; k < nodes.length; k++) {
-            var node = nodes[k];
-            frag.appendChild(node.cloneNode(true));
-        }
-        if (isPre) {
-            parentNode.insertBefore(frag, childNode);
-        } else {
-            parentNode.appendChild(frag);
-        }
-    }
-
-
-    /**
-     * 批量删除节点
-     * @param isPre 向上删除或向下删除
-     * @param isLast 是否最后一页
-     */
-    function deletePage(isPre, isLast) {
-        var childNodes = document.getElementsByClassName(childClassName);
-        var length = childNodes.length;
-        //循环删除数组，倒序删除
-        if (isPre) {
-            for (var i = unit - 1; i >= 0; i--) {
-                domDelete(childNodes[i]);
-            }
-        } else {
-            if (isLast) {
-                for (var k = length - 1; k >= parseInt(length / unit) * unit; k--) {
-                    domDelete(childNodes[k]);
-                }
-            } else {
-                for (var j = length - 1; j >= length - unit; j--) {
-                    domDelete(childNodes[j]);
-                }
-            }
-        }
-    }
-
-    /**
-     * 删除节点
-     * @param node
-     */
-    function domDelete(node) {
-        if (typeof(jQuery) == "undefined") {
-            node.parentNode.removeChild(node);
-            node = null;
-        } else {
-            $(node).remove();
-        }
-    }
-
-    /**
-     * 判断是否为一个函数
-     * @param fn
-     * @returns {boolean}
-     */
-    function isFunction(fn) {
-        return Object.prototype.toString.call(fn) === '[object Function]';
-    }
-
-    /**
-     * 判断数据类型
-     * @param obj
-     */
-    function isObj(obj) {
-        return typeof(obj);
-    }
-
-    /**
-     * 处理data，使得此函数能够接收多个类型
-     * @param data
-     * @returns {*}
-     */
-    function handleData(data) {
-        var dat;
-        try {
-            dat = JSON.parse(data);
-            dataType = TYPE_JSON;
-        } catch (err) {
-            try {
-                if (typeof(data[0]) == 'string' && !(typeof (data) == 'string')) {
-                    dataType = TYPE_STRING;
-                    dat = data;
-                } else if (typeof(data[0]) == 'object') {
-                    dataType = TYPE_OBJECT;
-                    dat = data;
-                } else if (typeof (data) == 'string') {
-                    dataType = TYPE_SINGLE_STR;
-                    dat = data;
-                } else if (typeof(data) == 'object' && !(typeof(data[0]) == 'object')) {
-                    dataType = TYPE_SINGLE_OBJ;
-                    dat = data;
-                }
-            } catch (e) {
-
-            }
-        }
-        return data.length === 0 ? void 0 : produceData(dat, dataType);
-    }
-
-    /**
-     * 生产数据
-     * @param dat
-     * @param type
-     */
-    function produceData(dat, type) {
-        var dt;
-        var content = [];
-        switch (type) {
-            case TYPE_JSON:
-            case TYPE_OBJECT:
-                for (var k = 0; k < dat.length; k++) {
-                    content.push(func(dat[k]));
-                }
-                dt = content;
-                break;
-            case TYPE_STRING:
-                dt = dat;
-                break;
-            case TYPE_SINGLE_OBJ:
-                content.push(func(dat));
-                dt = content;
-                break;
-            case TYPE_SINGLE_STR:
-                content.push(dat);
-                dt = content;
-                break;
-            default:
-                break;
-        }
-        return dt;
-    }
-
-    /**
-     * 监听函数，要求为事件委托方式，因为节点是动态生成的
-     */
-    function listen() {
-        if (isFunction(eventListener)) {
-            eventListener();
-        }
-    }
-
-    var ticking = false; // rAF 触发锁
-
-    function onScroll() {
-        if (!ticking) {
-            requestAnimationFrame(realFunc);
-            ticking = true;
-        }
-    }
-
-    function removeAll() {
-        if (typeof(jQuery) == "undefined") {
-            prtNode.empty();
-        } else {
-            while (prtNode.hasChildNodes()) {
-                prtNode.innerHTML = '';
-            }
-        }
-    }
-
-    function replaceContent(page) {
-        if (page >= -1) {
-            removeAll();
-            var content = [];
-            var frag = document.createDocumentFragment();
-            var div = document.createElement('div');
-            var dat;
-            if (data.length - (page + 1) * unit > unit) {
-                dat = data.slice(page > 0 ? (page) * unit : 0, (page + 2) * unit);
-            } else {
-                dat = data.slice(page > 0 ? (page) * unit : 0, data.length);
-            }
-            content.push(divBlankUContent);
-            for (var i = 0; i < dat.length; i++) {
-                content.push(dat[i]);
-            }
-            content.push(divBlankDContent);
-            div.innerHTML = content.join('');
-            var nodes = div.childNodes;
-            for (var k = 0; k < nodes.length; k++) {
-                var node = nodes[k];
-                frag.appendChild(node.cloneNode(true));
-            }
-            prtNode.appendChild(frag);
-            var divU = document.getElementById(divUId);
-            var divD = document.getElementById(divDId);
-            listType == 0 ? divD.style.height = (divBlankDH - (page + 1) * unitHeight) + 'px'
-                : divD.style.width = (divBlankDH - (page + 1) * unitHeight) + 'px';
-            listType == 0 ? document.getElementById(divDId).style.width = '100%'
-                : document.getElementById(divDId).style.display = 'inline-block';
-            listType == 0 ? divU.style.height = (unitHeight * (page)) + 'px'
-                : divU.style.width = (unitHeight * (page)) + 'px';
-            listType == 0 ? document.getElementById(divUId).style.width = '100%'
-                : document.getElementById(divUId).style.display = 'inline-block';
-            console.log('渲染页面');
-        }
-    }
-
-    /**
-     * 获取滚动条滑动方向
-     * @param parentNode
-     * @returns {boolean}
-     */
-    function isScrollUp(parentNode) {
-        currentScrollTop = listType == 0 ? parentNode.scrollTop : parentNode.scrollLeft;
-        var direction = currentScrollTop < lastScrollTop;
-        lastScrollTop = currentScrollTop;
-        return direction;
-    }
-
-    var oldTop = prtNode.scrollTop;
-
-    function isScrolling() {
-        if (scrollTimer) clearTimeout(scrollTimer);
-        var newTop = listType == 0 ? prtNode.scrollTop : prtNode.scrollLeft;
-        if (newTop === oldTop) {
-            clearTimeout(scrollTimer);
-            // console.log('停止滑动');
-            isScroll = false;
-        } else {
-            oldTop = newTop;
-            scrollTimer = setTimeout(isScrolling, 1500);
-            isScroll = true;
-        }
-    }
-
-    var hasChangePage;
-
-    function realFunc() {
-        // do something...
-        ticking = false;
-        var nDivHeight = listType == 0 ? prtNode.clientHeight : prtNode.clientWidth;
-        var nScrollTop = listType == 0 ? prtNode.scrollTop : prtNode.scrollLeft; //滚动到的当前位置
-        var dHeight = nDivHeight + nScrollTop;
-        var bl = isScrollUp(prtNode);
-        if (!bl) {
-            if (dHeight > (page + 1) * unitHeight - unitHeight * 0.2) {
-                // console.log('当前页   ' + page);
-                // console.log(prtNode.id + '  clientHeight: ' + nDivHeight + '  scollHeight: ' + prtNode.scrollHeight
-                //     + '  nScrollTop: ' + nScrollTop + '  unitHeight: ' + unitHeight + '    cardHeight    ' + cardHeight);
-                //如果此时剩余数据长度大于单元数据长度
-                // if (data.length - (page + 1) * unit > unit) {
-                // } else {
-                // }
-                page += 1;
-                hasChangePage = true;
-            }
-        } else {
-            if (dHeight < (page) * unitHeight - unitHeight * 0.4) {
-                // console.log('当前页   ' + page);
-                // if (data.length - page * unit < unit) {
-                // } else {
-                // }
-                page -= 1;
-                hasChangePage = true;
-            }
-        }
-    }
-
-    /**
-     * 滚动函数
-     */
-    function scroll() {
-        page = 0;       //初始化时为第0页
-        prtNode.addEventListener('scroll', realFunc, false);
-        prtNode.addEventListener('scroll', isScrolling, false);
-        prtNode.addEventListener('scroll', _.throttle(function () {
-            if (hasChangePage) {
-                if (!isScrollUp(prtNode)) {
-                    replaceContent(page - 1);
-                } else {
-                    replaceContent(page - 1);
-                }
-                statesFunction();
-                hasChangePage = false;
-            }
-        }, 200), false);
-    }
-
-    function statesFunction() {
-        isFunction(statesFunc) ? statesFunc() : void 0;
-    }
-}
+    return FixedList;
+}));
