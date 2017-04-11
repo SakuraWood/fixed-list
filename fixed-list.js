@@ -131,7 +131,7 @@
                         this.data = this._handleData(dat);
                         this._replaceHtml();
                     }
-                    this.olddata = data;
+                    this.olddata = this.data;
                 }
             }
         },
