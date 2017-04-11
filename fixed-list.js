@@ -127,7 +127,6 @@
                     console.time(1);
                     var bl = this._compareToOld(dat.slice(this.page > 0 ? (this.page) * this.unit : 0, dat.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : dat.length),
                         this.olddata.slice(this.page > 0 ? (this.page) * this.unit : 0, dat.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : dat.length));
-                    console.log('是否数据一样    ' + bl);
                     if (bl) {
                     } else {
                         this.data = this._handleData(dat);
@@ -220,7 +219,6 @@
             var newTop = self.listType == 0 ? self.prtNode.scrollTop : self.prtNode.scrollLeft;
             if (newTop === self.oldTop) {
                 clearTimeout(self.scrollTimer);
-                // console.log('停止滑动');
                 self.isScroll = false;
             } else {
                 self.oldTop = newTop;
@@ -386,7 +384,6 @@
                     : divU.style.width = (this.unitHeight * (page)) + 'px';
                 this.listType == 0 ? document.getElementById(this.divUId).style.width = '100%'
                     : document.getElementById(this.divUId).style.display = 'inline-block';
-                console.log('渲染页面');
             }
         },
 
@@ -483,7 +480,6 @@
             this.prtNode.innerHTML = array.join('');
             var restData = this.data.slice(this.unit, length);            //剩余的内容
             this.cardHeight = this._calChildHeight();
-            console.log('item的高度     ' + this.cardHeight);
             this.unitHeight = parseInt(this.cardHeight) * this.unit / this.cols;
             this.divBlankDH = Math.ceil(restData.length / this.cols) * parseInt(this.cardHeight);//初始化时下方空白区域的高度
             this.listType == 0 ? document.getElementById(this.divUId).style.height = '0px'
