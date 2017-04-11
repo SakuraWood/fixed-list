@@ -124,7 +124,6 @@
                     this.data = this._handleData(dat);
                     this._initData();
                 } else {
-                    console.time(1);
                     var bl = this._compareToOld(dat.slice(this.page > 0 ? (this.page) * this.unit : 0, dat.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : dat.length),
                         this.olddata.slice(this.page > 0 ? (this.page) * this.unit : 0, dat.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : dat.length));
                     if (bl) {
@@ -132,7 +131,6 @@
                         this.data = this._handleData(dat);
                         this._replaceHtml();
                     }
-                    console.timeEnd(1);
                     this.olddata = data;
                 }
             }
