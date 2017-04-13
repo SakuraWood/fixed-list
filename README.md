@@ -19,3 +19,8 @@ fixList.initList(2, 8);
 // datas can be object, array and string.
 fixList.refreshData(datas);
 ```
+
+### Refresh the data partly
+```
+fixList.refreshPart(data,1,10,20);
+```
