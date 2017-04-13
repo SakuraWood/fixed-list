@@ -45,6 +45,7 @@
             var self = this;
             self.prtNode = parentNode;
             self.data = self._handleData(dat);
+            self.olddata = self.data;
             self.produceFunc = produceFunc;
             self.prtId = self.prtNode.id;
             self.divBlankUContent
@@ -52,6 +53,7 @@
             self.divBlankDContent
                 = '<div id=' + 'divBlankD-' + self.prtId + ' style="position: relative;"></div>';//下方空白区域
             self.listType = 0;           //0代表纵向列表，1代表横向列表，默认为0
+            self.page = 0;
             self.divUId = 'divBlankU-' + self.prtId;
             self.divDId = 'divBlankD-' + self.prtId;
             self.oldTop = self.prtNode.scrollTop;
@@ -73,7 +75,7 @@
             this.type = type;
 
             type != null ? this.listType = type : void 0;
-            if (data === undefined) {
+            if (this.data === undefined || this.data.length === 0) {
                 return this;
             }
             this._initData();
@@ -113,22 +115,56 @@
         },
 
         /**
-         * 刷新数据
+         * 加载更多
+         * @param dat
+         */
+        loadMore: function (dat) {
+            this.data = add(this.data, this._handleData(dat));
+            this.refreshData(dat);
+        },
+
+        /**
+         * 刷新局部数据并渲染当前页
+         * @param dat 数据
+         * @param index 索引
+         * @param total 总索引数
+         * @param num 一次性替换的数量，可能与unit不同，unit指的是列表里每一页要显示的数量，而这个是数据源的每一个索引号包含的数量
+         */
+        refreshPart: function (dat, index, total, num) {
+            if (this.data === undefined || this.data.length === 0) {
+                this.data = this._handleData(dat);
+                this._initData();
+            } else {
+                var k = (index - 1) * num;
+                var con = [];
+                dat = this._handleData(dat);
+                for (var i = 0, j = dat.length; i < j; i++) {
+                    con = this.data.concat();
+                    con[k + i] = dat[i];
+                    this.data = con;
+                }
+                index === total ? this.data.slice(0, this.data[k + dat.length]) : void 0;
+                this.refreshData(this.data);
+            }
+        },
+
+        /**
+         * 刷新全部数据并渲染当前页
          * @param dat 需要刷新的数据源
          */
         refreshData: function (dat) {
-            if (dat.length == 0 || dat == null) {
+            if (dat.length === 0 || dat === null) {
                 this.prtNode.innerHTML = '';
             } else {
-                if (this.data == undefined) {
+                if (this.data === undefined || this.data.length === 0) {
                     this.data = this._handleData(dat);
                     this._initData();
                 } else {
-                    var bl = this._compareToOld(dat.slice(this.page > 0 ? (this.page) * this.unit : 0, dat.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : dat.length),
-                        this.olddata.slice(this.page > 0 ? (this.page) * this.unit : 0, dat.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : dat.length));
+                    this.data = this._handleData(dat);
+                    var bl = this._compareToOld(this.data.slice(this.page > 0 ? (this.page) * this.unit : 0, this.data.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : this.data.length),
+                        this.olddata.slice(this.page > 0 ? (this.page) * this.unit : 0, this.data.length - (this.page + 1) * this.unit > this.unit ? (this.page + 2) * this.unit : this.data.length));
                     if (bl) {
                     } else {
-                        this.data = this._handleData(dat);
                         this._replaceHtml();
                     }
                     this.olddata = this.data;
@@ -137,12 +173,13 @@
         },
 
         /**
-         * 是否向上滑
+         * 检测是否向上滑动
          * @param parentNode 父节点
          * @returns {boolean}
+         * @private
          */
         _isScrollUp: function (parentNode) {
-            this.currentScrollTop = this.listType == 0 ? parentNode.scrollTop : parentNode.scrollLeft;
+            this.currentScrollTop = this.listType === 0 ? parentNode.scrollTop : parentNode.scrollLeft;
             var direction = this.currentScrollTop < this.lastScrollTop;
             this.lastScrollTop = this.currentScrollTop;
             return direction;
@@ -158,17 +195,6 @@
             self.prtNode.addEventListener('scroll', function () {
                 self._realFunc(self);
                 self._isScrolling(self);
-                throttle(function () {
-                    if (self.hasChangePage) {
-                        if (!self._isScrollUp(self.prtNode)) {
-                            self._replaceContent(self.page - 1);
-                        } else {
-                            self._replaceContent(self.page - 1);
-                        }
-                        self._statesFunction();
-                        self.hasChangePage = false;
-                    }
-                }, 200);
             }, false);
             self.prtNode.addEventListener('scroll', throttle(function () {
                 if (self.hasChangePage) {
@@ -190,8 +216,8 @@
          */
         _realFunc: function (self) {
             // do something...
-            var nDivHeight = self.listType == 0 ? self.prtNode.clientHeight : self.prtNode.clientWidth;
-            var nScrollTop = self.listType == 0 ? self.prtNode.scrollTop : self.prtNode.scrollLeft; //滚动到的当前位置
+            var nDivHeight = self.listType === 0 ? self.prtNode.clientHeight : self.prtNode.clientWidth;
+            var nScrollTop = self.listType === 0 ? self.prtNode.scrollTop : self.prtNode.scrollLeft; //滚动到的当前位置
             var dHeight = nDivHeight + nScrollTop;
             var bl = self._isScrollUp(self.prtNode);
             if (!bl) {
@@ -250,16 +276,16 @@
                 this.dataType = TYPE_JSON;
             } catch (err) {
                 try {
-                    if (typeof(data[0]) == 'string' && !(typeof (data) == 'string')) {
+                    if (typeof(data[0]) === 'string' && !(typeof (data) === 'string')) {
                         this.dataType = TYPE_STRING;
                         dat = data;
-                    } else if (typeof(data[0]) == 'object') {
+                    } else if (typeof(data[0]) === 'object') {
                         this.dataType = TYPE_OBJECT;
                         dat = data;
-                    } else if (typeof (data) == 'string') {
+                    } else if (typeof (data) === 'string') {
                         this.dataType = TYPE_SINGLE_STR;
                         dat = data;
-                    } else if (typeof(data) == 'object' && !(typeof(data[0]) == 'object')) {
+                    } else if (typeof(data) === 'object' && !(typeof(data[0]) === 'object')) {
                         this.dataType = TYPE_SINGLE_OBJ;
                         dat = data;
                     }
@@ -267,7 +293,7 @@
 
                 }
             }
-            return data.length === 0 ? void 0 : this._produceData(dat, this.dataType);
+            return data.length === 0 || data === undefined ? [] : this._produceData(dat, this.dataType);
         },
 
         /**
@@ -311,14 +337,14 @@
          */
         _replaceHtml: function () {
             var length = this.data.length;
-            if (this.page == 0) {
+            if (this.page === 0) {
                 var restData = this.data.slice(this.unit, length);            //剩余的内容
                 this.divBlankDH = Math.ceil(restData.length / this.cols) * parseInt(this.cardHeight);//初始化时下方空白区域的高度
                 this._replaceContent(this.page - 1);
             } else {
                 //如果当前所在页已经超出了新数据的长度
                 if (length < (this.page) * this.unit) {
-                    document.getElementById(divDId).style.height = '0px';
+                    document.getElementById(this.divDId).style.height = '0px';
                     this.page = Math.ceil(length / this.unit);
                     this.divBlankUH = Math.ceil((this.page - 2) * this.unit / this.cols) * parseInt(this.cardHeight);//初始化时下方空白区域的高度
                     this._replaceContent(this.page - 1);
@@ -334,7 +360,7 @@
          * @private
          */
         _removeAll: function () {
-            if (typeof(jQuery) == "undefined") {
+            if (typeof(jQuery) === "undefined") {
                 this.prtNode.empty();
             } else {
                 while (this.prtNode.hasChildNodes()) {
@@ -374,13 +400,13 @@
                 this.prtNode.appendChild(frag);
                 var divU = document.getElementById(this.divUId);
                 var divD = document.getElementById(this.divDId);
-                this.listType == 0 ? divD.style.height = (this.divBlankDH - (page + 1) * this.unitHeight) + 'px'
+                this.listType === 0 ? divD.style.height = (this.divBlankDH - (page + 1) * this.unitHeight) + 'px'
                     : divD.style.width = (this.divBlankDH - (page + 1) * this.unitHeight) + 'px';
-                this.listType == 0 ? document.getElementById(this.divDId).style.width = '100%'
+                this.listType === 0 ? document.getElementById(this.divDId).style.width = '100%'
                     : document.getElementById(this.divDId).style.display = 'inline-block';
-                this.listType == 0 ? divU.style.height = (this.unitHeight * (page)) + 'px'
+                this.listType === 0 ? divU.style.height = (this.unitHeight * (page)) + 'px'
                     : divU.style.width = (this.unitHeight * (page)) + 'px';
-                this.listType == 0 ? document.getElementById(this.divUId).style.width = '100%'
+                this.listType === 0 ? document.getElementById(this.divUId).style.width = '100%'
                     : document.getElementById(this.divUId).style.display = 'inline-block';
             }
         },
@@ -500,7 +526,7 @@
          */
         _compareToOld: function (newDataArray, oldDataArray) {
             var bl = true;
-            for (var i = 0, j = oldDataArray.length; i < j; i++) {
+            for (var i = 0, j = newDataArray.length; i < j; i++) {
                 if (!eq(newDataArray[i], oldDataArray[i])) {
                     bl = false;
                 }
@@ -515,7 +541,7 @@
          */
         _calChildHeight: function () {
             var childNode = this.prtNode.childNodes[1];
-            return this.listType == 0 ? parseInt($(childNode).css('height')) : parseInt($(childNode).css('width'));
+            return this.listType === 0 ? parseInt($(childNode).css('height')) : parseInt($(childNode).css('width'));
         },
 
         /**
@@ -856,6 +882,14 @@
             ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
             : (reIsBadHex.test(value) ? NAN : +value);
     }
+
+    function add(array1, array2) {
+        for (var i = 0, j = array2.length; i < j; i++) {
+            array1.push(array2[i]);
+        }
+        return array1;
+    }
+
 
     //导出为AMD规范的模块
     if (typeof define === "function" && define.amd) {
