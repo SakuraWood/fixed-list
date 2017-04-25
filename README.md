@@ -10,6 +10,8 @@ the child view's height must be fixed,otherwise can not calculate the total of h
 ```
 // the parentNode of all the children view's container
 fixList = new FixedList(parentNode);
+// if you have a function to generate the content html, you also can use this:
+fixList =new FixedList(parentNode,content,getChildContent);
 // the first param is cols, and the second param is the number of children view you want to show
 fixList.initList(2, 8);
 ```
@@ -18,6 +20,7 @@ fixList.initList(2, 8);
 ```
 // datas can be object, array and string.
 fixList.refreshData(datas);
+
 ```
 
 ### Refresh the data partly
